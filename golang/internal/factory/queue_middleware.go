@@ -6,20 +6,21 @@ import (
 )
 
 type QueueMiddleware struct {
-	conn    *amqp.Connection
-	channel *amqp.Channel
-	queue   amqp.Queue
+	conn        *amqp.Connection
+	channel     *amqp.Channel
+	queue       amqp.Queue
+	consumerTag string
 }
 
 func (qm *QueueMiddleware) StartConsuming(callbackFunc func(msg m.Message, ack func(), nack func())) (err error) {
 	msgs, err := qm.channel.Consume(
-		qm.queue.Name, // queue
-		"",            // consumer
-		false,         // auto-ack
-		false,         // exclusive
-		false,         // no-local
-		false,         // no-wait
-		nil,           // args
+		qm.queue.Name,  // queue
+		qm.consumerTag, // consumer
+		false,          // auto-ack
+		false,          // exclusive
+		false,          // no-local
+		false,          // no-wait
+		nil,            // args
 	)
 	if err != nil {
 		return m.ErrMessageMiddlewareMessage

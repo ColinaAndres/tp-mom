@@ -33,9 +33,10 @@ func CreateQueueMiddleware(queueName string, connectionSettings m.ConnSettings) 
 	}
 
 	return &QueueMiddleware{
-		conn:    conn,
-		channel: ch,
-		queue:   q,
+		conn:        conn,
+		channel:     ch,
+		queue:       q,
+		consumerTag: q.Name,
 	}, nil
 }
 
