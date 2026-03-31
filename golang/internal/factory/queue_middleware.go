@@ -76,17 +76,3 @@ func (qm *QueueMiddleware) Close() error {
 	}
 	return nil
 }
-
-func ack(msg amqp.Delivery) func() {
-	// TODO: preguntar como manejar los errorres
-	return func() {
-		msg.Ack(false)
-	}
-}
-
-func nack(msg amqp.Delivery) func() {
-	// TODO: preguntar como manejar los errorres
-	return func() {
-		msg.Nack(false, true)
-	}
-}
