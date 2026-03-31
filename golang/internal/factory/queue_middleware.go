@@ -26,18 +26,26 @@ func (qm *QueueMiddleware) StartConsuming(callbackFunc func(msg m.Message, ack f
 		return m.ErrMessageMiddlewareMessage
 	}
 
-	go func() {
-		for msg := range msgs {
-			callbackFunc(m.Message{Body: string(msg.Body)}, ack(msg), nack(msg))
-		}
-	}()
-	return nil
+	for msg := range msgs {
+		callbackFunc(m.Message{Body: string(msg.Body)},
+			func() {
+				if err := msg.Ack(false); err != nil {
+					err = m.ErrMessageMiddlewareMessage
+				}
+			},
+			func() {
+				if err := msg.Nack(false, true); err != nil {
+					err = m.ErrMessageMiddlewareMessage
+				}
+			})
+	}
+	return err
 }
 
 // creo que hay un error aca deberia devolver algun error pero no aparece en la interfaz
 func (qm *QueueMiddleware) StopConsuming() {
 	// TODO: Revisar si necesio un tag o si asi basta
-	qm.channel.Cancel("", false)
+	qm.channel.Cancel(qm.consumerTag, false)
 }
 
 func (qm *QueueMiddleware) Send(msg m.Message) (err error) {
