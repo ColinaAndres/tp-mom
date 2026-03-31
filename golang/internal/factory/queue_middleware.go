@@ -6,14 +6,15 @@ import (
 )
 
 type QueueMiddleware struct {
-	conn        *amqp.Connection
-	channel     *amqp.Channel
-	queue       amqp.Queue
-	consumerTag string
+	conn             *amqp.Connection
+	consumerChannel  *amqp.Channel
+	publisherChannel *amqp.Channel
+	queue            amqp.Queue
+	consumerTag      string
 }
 
 func (qm *QueueMiddleware) StartConsuming(callbackFunc func(msg m.Message, ack func(), nack func())) (err error) {
-	msgs, err := qm.channel.Consume(
+	msgs, err := qm.consumerChannel.Consume(
 		qm.queue.Name,  // queue
 		qm.consumerTag, // consumer
 		false,          // auto-ack
@@ -45,12 +46,12 @@ func (qm *QueueMiddleware) StartConsuming(callbackFunc func(msg m.Message, ack f
 // creo que hay un error aca deberia devolver algun error pero no aparece en la interfaz
 func (qm *QueueMiddleware) StopConsuming() {
 	// TODO: Revisar si necesio un tag o si asi basta
-	qm.channel.Cancel(qm.consumerTag, false)
+	qm.consumerChannel.Cancel(qm.consumerTag, false)
 }
 
 func (qm *QueueMiddleware) Send(msg m.Message) (err error) {
 	//TODO: preguntar si se usa un context o no
-	err = qm.channel.Publish(
+	err = qm.publisherChannel.Publish(
 		"",            // exchange
 		qm.queue.Name, // routing key
 		false,         // mandatory
@@ -66,7 +67,11 @@ func (qm *QueueMiddleware) Send(msg m.Message) (err error) {
 }
 
 func (qm *QueueMiddleware) Close() error {
-	err := qm.channel.Close()
+	err := qm.publisherChannel.Close()
+	if err != nil {
+		return m.ErrMessageMiddlewareClose
+	}
+	err = qm.consumerChannel.Close()
 	if err != nil {
 		return m.ErrMessageMiddlewareClose
 	}

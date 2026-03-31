@@ -14,12 +14,17 @@ func CreateQueueMiddleware(queueName string, connectionSettings m.ConnSettings) 
 		return nil, err
 	}
 
-	ch, err := conn.Channel()
+	consumerChannel, err := conn.Channel()
 	if err != nil {
 		return nil, err
 	}
 
-	q, err := ch.QueueDeclare(
+	publisherChannel, err := conn.Channel()
+	if err != nil {
+		return nil, err
+	}
+
+	q, err := consumerChannel.QueueDeclare(
 		queueName, // name
 		false,     // durability
 		false,     // delete when unused
@@ -33,10 +38,11 @@ func CreateQueueMiddleware(queueName string, connectionSettings m.ConnSettings) 
 	}
 
 	return &QueueMiddleware{
-		conn:        conn,
-		channel:     ch,
-		queue:       q,
-		consumerTag: q.Name,
+		conn:             conn,
+		consumerChannel:  consumerChannel,
+		publisherChannel: publisherChannel,
+		queue:            q,
+		consumerTag:      q.Name,
 	}, nil
 }
 
