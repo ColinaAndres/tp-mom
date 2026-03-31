@@ -12,6 +12,24 @@ type QueueMiddleware struct {
 }
 
 func (qm *QueueMiddleware) StartConsuming(callbackFunc func(msg m.Message, ack func(), nack func())) (err error) {
+	msgs, err := qm.channel.Consume(
+		qm.queue.Name, // queue
+		"",            // consumer
+		false,         // auto-ack
+		false,         // exclusive
+		false,         // no-local
+		false,         // no-wait
+		nil,           // args
+	)
+	if err != nil {
+		return m.ErrMessageMiddlewareMessage
+	}
+
+	go func() {
+		for msg := range msgs {
+			callbackFunc(m.Message{Body: string(msg.Body)}, ack(msg), nack(msg))
+		}
+	}()
 	return nil
 }
 
@@ -32,4 +50,18 @@ func (qm *QueueMiddleware) Close() error {
 		return m.ErrMessageMiddlewareClose
 	}
 	return nil
+}
+
+func ack(msg amqp.Delivery) func() {
+	// TODO: preguntar como manejar los errorres
+	return func() {
+		msg.Ack(false)
+	}
+}
+
+func nack(msg amqp.Delivery) func() {
+	// TODO: preguntar como manejar los errorres
+	return func() {
+		msg.Nack(false, true)
+	}
 }
