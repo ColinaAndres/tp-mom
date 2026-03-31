@@ -11,6 +11,7 @@ type QueueMiddleware struct {
 	publisherChannel *amqp.Channel
 	queue            amqp.Queue
 	consumerTag      string
+	done             chan struct{}
 }
 
 func (qm *QueueMiddleware) StartConsuming(callbackFunc func(msg m.Message, ack func(), nack func())) (err error) {
@@ -26,6 +27,10 @@ func (qm *QueueMiddleware) StartConsuming(callbackFunc func(msg m.Message, ack f
 	if err != nil {
 		return m.ErrMessageMiddlewareMessage
 	}
+
+	// Canal que al cerrarse indica que se dejo de consumir y procesar mensajes
+	qm.done = make(chan struct{})
+	defer close(qm.done)
 
 	for msg := range msgs {
 		callbackFunc(m.Message{Body: string(msg.Body)},
@@ -45,8 +50,10 @@ func (qm *QueueMiddleware) StartConsuming(callbackFunc func(msg m.Message, ack f
 
 // creo que hay un error aca deberia devolver algun error pero no aparece en la interfaz
 func (qm *QueueMiddleware) StopConsuming() {
-	// TODO: Revisar si necesio un tag o si asi basta
-	qm.consumerChannel.Cancel(qm.consumerTag, false)
+	_ = qm.consumerChannel.Cancel(qm.consumerTag, false)
+
+	// Se espera a que se deje de consumir y procesar mensajes antes de retornar
+	<-qm.done
 }
 
 func (qm *QueueMiddleware) Send(msg m.Message) (err error) {
@@ -67,6 +74,7 @@ func (qm *QueueMiddleware) Send(msg m.Message) (err error) {
 }
 
 func (qm *QueueMiddleware) Close() error {
+	qm.StopConsuming()
 	err := qm.publisherChannel.Close()
 	if err != nil {
 		return m.ErrMessageMiddlewareClose
