@@ -34,7 +34,10 @@ func (qm *QueueMiddleware) StartConsuming(callbackFunc func(msg m.Message, ack f
 }
 
 // creo que hay un error aca deberia devolver algun error pero no aparece en la interfaz
-func (qm *QueueMiddleware) StopConsuming() {}
+func (qm *QueueMiddleware) StopConsuming() {
+	// TODO: Revisar si necesio un tag o si asi basta
+	qm.channel.Cancel("", false)
+}
 
 func (qm *QueueMiddleware) Send(msg m.Message) (err error) {
 	//TODO: preguntar si se usa un context o no
