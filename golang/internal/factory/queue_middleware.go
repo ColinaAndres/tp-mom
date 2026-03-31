@@ -37,6 +37,19 @@ func (qm *QueueMiddleware) StartConsuming(callbackFunc func(msg m.Message, ack f
 func (qm *QueueMiddleware) StopConsuming() {}
 
 func (qm *QueueMiddleware) Send(msg m.Message) (err error) {
+	//TODO: preguntar si se usa un context o no
+	err = qm.channel.Publish(
+		"",            // exchange
+		qm.queue.Name, // routing key
+		false,         // mandatory
+		false,         // immediate
+		amqp.Publishing{
+			ContentType: "text/plain",
+			Body:        []byte(msg.Body),
+		})
+	if err != nil {
+		return m.ErrMessageMiddlewareMessage
+	}
 	return nil
 }
 
