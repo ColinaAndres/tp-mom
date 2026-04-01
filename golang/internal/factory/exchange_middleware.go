@@ -89,7 +89,7 @@ func (em *ExchangeMiddleware) Send(msg m.Message) (err error) {
 	defer cancel()
 
 	for _, key := range em.keys {
-		err = em.channel.PublishWithContext(ctx,
+		err = em.publisherChannel.PublishWithContext(ctx,
 			em.exchange, // exchange
 			key,         // routing key
 			false,       // mandatory
