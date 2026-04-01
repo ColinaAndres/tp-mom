@@ -18,11 +18,62 @@ type ExchangeMiddleware struct {
 }
 
 func (em *ExchangeMiddleware) StartConsuming(callbackFunc func(msg m.Message, ack func(), nack func())) (err error) {
-	return nil
+	queue, err := em.consumerChannel.QueueDeclare(
+		"",    // name
+		false, // durability
+		true,  // delete when unused
+		true,  // exclusive
+		false, // no-wait
+		nil,
+	)
+
+	if err != nil {
+		return m.ErrMessageMiddlewareMessage
+	}
+
+	for _, key := range em.keys {
+		err = em.consumerChannel.QueueBind(
+			queue.Name,  // queue name
+			key,         // routing key
+			em.exchange, // exchange
+			false,       // no-wait
+			nil,
+		)
+		if err != nil {
+			return m.ErrMessageMiddlewareMessage
+		}
+	}
+
+	msgs, err := em.consumerChannel.Consume(
+		queue.Name, // queue
+		"",         // consumer
+		false,      // auto-ack
+		false,      // exclusive
+		false,      // no-local
+		false,      // no-wait
+		nil,        // args
+	)
+	if err != nil {
+		return m.ErrMessageMiddlewareMessage
+	}
+
+	for msg := range msgs {
+		callbackFunc(m.Message{Body: string(msg.Body)},
+			func() {
+				if err := msg.Ack(false); err != nil {
+					err = m.ErrMessageMiddlewareMessage
+				}
+			},
+			func() {
+				if err := msg.Nack(false, true); err != nil {
+					err = m.ErrMessageMiddlewareMessage
+				}
+			})
+	}
+	return err
 }
 
 func (em *ExchangeMiddleware) StopConsuming() {
-
 }
 
 func (em *ExchangeMiddleware) Send(msg m.Message) (err error) {
