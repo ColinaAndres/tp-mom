@@ -25,5 +25,13 @@ func (em *ExchangeMiddleware) Send(msg m.Message) (err error) {
 }
 
 func (em *ExchangeMiddleware) Close() error {
+	err := em.channel.Close()
+	if err != nil {
+		return m.ErrMessageMiddlewareClose
+	}
+	err = em.conn.Close()
+	if err != nil {
+		return m.ErrMessageMiddlewareClose
+	}
 	return nil
 }
