@@ -48,5 +48,35 @@ func CreateQueueMiddleware(queueName string, connectionSettings m.ConnSettings) 
 }
 
 func CreateExchangeMiddleware(exchange string, keys []string, connectionSettings m.ConnSettings) (m.Middleware, error) {
-	return nil, nil
+	url := fmt.Sprintf("amqp://guest:guest@%s:%d/", connectionSettings.Hostname, connectionSettings.Port)
+	conn, err := amqp.Dial(url)
+	if err != nil {
+		return nil, err
+	}
+
+	channel, err := conn.Channel()
+	if err != nil {
+		return nil, err
+	}
+
+	// Dado que me dan la lista de routing keys, asumo que el exchange es de tipo topic o direct
+	err = channel.ExchangeDeclare(
+		exchange, // name
+		"topic",  // type
+		false,    // durability
+		false,    // auto-deleted
+		false,    // internal
+		false,    // no-wait
+		nil,      // arguments
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ExchangeMiddleware{
+		conn:     conn,
+		channel:  channel,
+		exchange: exchange,
+		keys:     keys,
+	}, nil
 }
