@@ -54,13 +54,18 @@ func CreateExchangeMiddleware(exchange string, keys []string, connectionSettings
 		return nil, err
 	}
 
-	channel, err := conn.Channel()
+	consumerChannel, err := conn.Channel()
+	if err != nil {
+		return nil, err
+	}
+
+	publisherChannel, err := conn.Channel()
 	if err != nil {
 		return nil, err
 	}
 
 	// Dado que me dan la lista de routing keys, asumo que el exchange es de tipo topic o direct
-	err = channel.ExchangeDeclare(
+	err = publisherChannel.ExchangeDeclare(
 		exchange, // name
 		"topic",  // type
 		false,    // durability
@@ -74,9 +79,10 @@ func CreateExchangeMiddleware(exchange string, keys []string, connectionSettings
 	}
 
 	return &ExchangeMiddleware{
-		conn:     conn,
-		channel:  channel,
-		exchange: exchange,
-		keys:     keys,
+		conn:             conn,
+		publisherChannel: publisherChannel,
+		consumerChannel:  consumerChannel,
+		exchange:         exchange,
+		keys:             keys,
 	}, nil
 }

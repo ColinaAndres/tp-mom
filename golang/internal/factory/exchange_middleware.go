@@ -9,10 +9,12 @@ import (
 )
 
 type ExchangeMiddleware struct {
-	conn     *amqp.Connection
-	channel  *amqp.Channel
-	exchange string
-	keys     []string
+	conn             *amqp.Connection
+	publisherChannel *amqp.Channel
+	consumerChannel  *amqp.Channel
+	channel          *amqp.Channel
+	exchange         string
+	keys             []string
 }
 
 func (em *ExchangeMiddleware) StartConsuming(callbackFunc func(msg m.Message, ack func(), nack func())) (err error) {
@@ -24,7 +26,7 @@ func (em *ExchangeMiddleware) StopConsuming() {
 }
 
 func (em *ExchangeMiddleware) Send(msg m.Message) (err error) {
-	// se opta por usar un ctx para mantenernos en un tiempo limite
+	// se opta por usar un ctx para mantenernos en un tipo limite
 	// y seguir la propuesta de RabbitMQ
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
