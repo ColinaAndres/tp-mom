@@ -14,6 +14,7 @@ type ExchangeMiddleware struct {
 	consumerChannel  *amqp.Channel
 	channel          *amqp.Channel
 	exchange         string
+	consumerTag      string
 	keys             []string
 }
 
@@ -44,14 +45,15 @@ func (em *ExchangeMiddleware) StartConsuming(callbackFunc func(msg m.Message, ac
 		}
 	}
 
+	em.consumerTag = queue.Name
 	msgs, err := em.consumerChannel.Consume(
-		queue.Name, // queue
-		"",         // consumer
-		false,      // auto-ack
-		false,      // exclusive
-		false,      // no-local
-		false,      // no-wait
-		nil,        // args
+		queue.Name,     // queue
+		em.consumerTag, // consumer
+		false,          // auto-ack
+		false,          // exclusive
+		false,          // no-local
+		false,          // no-wait
+		nil,            // args
 	)
 	if err != nil {
 		return m.ErrMessageMiddlewareMessage
@@ -74,6 +76,10 @@ func (em *ExchangeMiddleware) StartConsuming(callbackFunc func(msg m.Message, ac
 }
 
 func (em *ExchangeMiddleware) StopConsuming() {
+	if em.consumerTag == "" {
+		return
+	}
+	_ = em.consumerChannel.Cancel(em.consumerTag, false)
 }
 
 func (em *ExchangeMiddleware) Send(msg m.Message) (err error) {
@@ -102,10 +108,17 @@ func (em *ExchangeMiddleware) Send(msg m.Message) (err error) {
 }
 
 func (em *ExchangeMiddleware) Close() error {
-	err := em.channel.Close()
+	em.StopConsuming()
+	err := em.publisherChannel.Close()
 	if err != nil {
 		return m.ErrMessageMiddlewareClose
 	}
+
+	err = em.consumerChannel.Close()
+	if err != nil {
+		return m.ErrMessageMiddlewareClose
+	}
+
 	err = em.conn.Close()
 	if err != nil {
 		return m.ErrMessageMiddlewareClose
