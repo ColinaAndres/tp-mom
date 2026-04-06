@@ -86,14 +86,14 @@ func (em *ExchangeMiddleware) StopConsuming() error {
 	return nil
 }
 
-func (em *ExchangeMiddleware) Send(msg m.Message) (err error) {
+func (em *ExchangeMiddleware) Send(msg m.Message) error {
 	// se opta por usar un ctx para mantenernos en un tipo limite
 	// y seguir la propuesta de RabbitMQ
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	for _, key := range em.keys {
-		err = em.publisherChannel.PublishWithContext(ctx,
+		err := em.publisherChannel.PublishWithContext(ctx,
 			em.exchange, // exchange
 			key,         // routing key
 			false,       // mandatory
@@ -129,15 +129,4 @@ func (em *ExchangeMiddleware) Close() error {
 		return m.ErrMessageMiddlewareClose
 	}
 	return nil
-}
-
-func mapMiddlewareError(err error) error {
-	switch err {
-	case nil:
-		return nil
-	case amqp.ErrClosed:
-		return m.ErrMessageMiddlewareDisconnected
-	default:
-		return m.ErrMessageMiddlewareMessage
-	}
 }

@@ -85,8 +85,8 @@ func (qm *QueueMiddleware) Send(msg m.Message) error {
 			ContentType: "text/plain",
 			Body:        []byte(msg.Body),
 		})
-	if err != nil {
-		return m.ErrMessageMiddlewareMessage
+	if err = mapMiddlewareError(err); err != nil {
+		return err
 	}
 	return nil
 }
