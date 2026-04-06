@@ -15,7 +15,7 @@ type QueueMiddleware struct {
 	consuming        bool
 }
 
-func (qm *QueueMiddleware) StartConsuming(callbackFunc func(msg m.Message, ack func(), nack func())) (err error) {
+func (qm *QueueMiddleware) StartConsuming(callbackFunc func(msg m.Message, ack func(), nack func())) error {
 	qm.consuming = true
 	msgs, err := qm.consumerChannel.Consume(
 		qm.queue.Name,  // queue
@@ -52,20 +52,24 @@ func (qm *QueueMiddleware) StartConsuming(callbackFunc func(msg m.Message, ack f
 }
 
 // creo que hay un error aca deberia devolver algun error pero no aparece en la interfaz
-func (qm *QueueMiddleware) StopConsuming() {
+func (qm *QueueMiddleware) StopConsuming() error {
 	if !qm.consuming {
-		return
+		return nil
 	}
-	_ = qm.consumerChannel.Cancel(qm.consumerTag, false)
+	err := qm.consumerChannel.Cancel(qm.consumerTag, false)
+	if err != nil {
+		return err
+	}
 
 	// Se espera a que se deje de consumir y procesar mensajes antes de retornar
 	<-qm.done
 	qm.consuming = false
+	return nil
 }
 
-func (qm *QueueMiddleware) Send(msg m.Message) (err error) {
+func (qm *QueueMiddleware) Send(msg m.Message) error {
 	//TODO: preguntar si se usa un context o no
-	err = qm.publisherChannel.Publish(
+	err := qm.publisherChannel.Publish(
 		"",            // exchange
 		qm.queue.Name, // routing key
 		false,         // mandatory
