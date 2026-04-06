@@ -1,6 +1,9 @@
 package factory
 
 import (
+	"context"
+	"time"
+
 	m "github.com/7574-sistemas-distribuidos/tp-mom/golang/internal/middleware"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -51,14 +54,14 @@ func (qm *QueueMiddleware) StartConsuming(callbackFunc func(msg m.Message, ack f
 	return err
 }
 
-// creo que hay un error aca deberia devolver algun error pero no aparece en la interfaz
 func (qm *QueueMiddleware) StopConsuming() error {
 	if !qm.consuming {
 		return nil
 	}
+
 	err := qm.consumerChannel.Cancel(qm.consumerTag, false)
 	if err != nil {
-		return err
+		return m.ErrMessageMiddlewareDisconnected
 	}
 
 	// Se espera a que se deje de consumir y procesar mensajes antes de retornar
@@ -68,8 +71,12 @@ func (qm *QueueMiddleware) StopConsuming() error {
 }
 
 func (qm *QueueMiddleware) Send(msg m.Message) error {
-	//TODO: preguntar si se usa un context o no
-	err := qm.publisherChannel.Publish(
+	// se opta por usar un ctx para mantenernos en un tipo limite
+	// y seguir la propuesta de RabbitMQ
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	err := qm.publisherChannel.PublishWithContext(ctx,
 		"",            // exchange
 		qm.queue.Name, // routing key
 		false,         // mandatory

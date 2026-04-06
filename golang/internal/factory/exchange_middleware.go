@@ -103,8 +103,9 @@ func (em *ExchangeMiddleware) Send(msg m.Message) (err error) {
 				Body:        []byte(msg.Body),
 			},
 		)
-		if err != nil {
-			return m.ErrMessageMiddlewareMessage
+
+		if err := mapMiddlewareError(err); err != nil {
+			return err
 		}
 	}
 
@@ -128,4 +129,15 @@ func (em *ExchangeMiddleware) Close() error {
 		return m.ErrMessageMiddlewareClose
 	}
 	return nil
+}
+
+func mapMiddlewareError(err error) error {
+	switch err {
+	case nil:
+		return nil
+	case amqp.ErrClosed:
+		return m.ErrMessageMiddlewareDisconnected
+	default:
+		return m.ErrMessageMiddlewareMessage
+	}
 }
