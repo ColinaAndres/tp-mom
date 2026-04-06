@@ -1,8 +1,15 @@
 package factory
 
 import (
+	"time"
+
 	m "github.com/7574-sistemas-distribuidos/tp-mom/golang/internal/middleware"
 	amqp "github.com/rabbitmq/amqp091-go"
+)
+
+const (
+	publishTimeout = 5 * time.Second
+	contentType    = "text/plain"
 )
 
 func mapMiddlewareError(err error) error {

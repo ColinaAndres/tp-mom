@@ -2,7 +2,6 @@ package factory
 
 import (
 	"context"
-	"time"
 
 	m "github.com/7574-sistemas-distribuidos/tp-mom/golang/internal/middleware"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -73,7 +72,7 @@ func (qm *QueueMiddleware) StopConsuming() error {
 func (qm *QueueMiddleware) Send(msg m.Message) error {
 	// se opta por usar un ctx para mantenernos en un tipo limite
 	// y seguir la propuesta de RabbitMQ
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), publishTimeout)
 	defer cancel()
 
 	err := qm.publisherChannel.PublishWithContext(ctx,
@@ -82,7 +81,7 @@ func (qm *QueueMiddleware) Send(msg m.Message) error {
 		false,    // mandatory
 		false,    // immediate
 		amqp.Publishing{
-			ContentType: "text/plain",
+			ContentType: contentType,
 			Body:        []byte(msg.Body),
 		})
 	if err = mapMiddlewareError(err); err != nil {
