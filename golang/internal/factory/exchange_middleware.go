@@ -18,7 +18,7 @@ type ExchangeMiddleware struct {
 	keys             []string
 }
 
-func (em *ExchangeMiddleware) StartConsuming(callbackFunc func(msg m.Message, ack func(), nack func())) (err error) {
+func (em *ExchangeMiddleware) StartConsuming(callbackFunc func(msg m.Message, ack func(), nack func())) error {
 	queue, err := em.consumerChannel.QueueDeclare(
 		"",    // name
 		false, // durability
@@ -75,11 +75,15 @@ func (em *ExchangeMiddleware) StartConsuming(callbackFunc func(msg m.Message, ac
 	return err
 }
 
-func (em *ExchangeMiddleware) StopConsuming() {
+func (em *ExchangeMiddleware) StopConsuming() error {
 	if em.consumerTag == "" {
-		return
+		return nil
 	}
-	_ = em.consumerChannel.Cancel(em.consumerTag, false)
+	err := em.consumerChannel.Cancel(em.consumerTag, false)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (em *ExchangeMiddleware) Send(msg m.Message) (err error) {
