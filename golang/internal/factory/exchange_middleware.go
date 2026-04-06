@@ -104,7 +104,7 @@ func (em *ExchangeMiddleware) Send(msg m.Message) (err error) {
 			},
 		)
 
-		if err := mapMiddlewareError(err); err != nil {
+		if err = mapMiddlewareError(err); err != nil {
 			return err
 		}
 	}
