@@ -12,7 +12,7 @@ type QueueMiddleware struct {
 	conn             *amqp.Connection
 	consumerChannel  *amqp.Channel
 	publisherChannel *amqp.Channel
-	queue            amqp.Queue
+	queue            string
 	consumerTag      string
 	done             chan struct{}
 	consuming        bool
@@ -21,7 +21,7 @@ type QueueMiddleware struct {
 func (qm *QueueMiddleware) StartConsuming(callbackFunc func(msg m.Message, ack func(), nack func())) error {
 	qm.consuming = true
 	msgs, err := qm.consumerChannel.Consume(
-		qm.queue.Name,  // queue
+		qm.queue,       // queue
 		qm.consumerTag, // consumer
 		false,          // auto-ack
 		false,          // exclusive
@@ -77,10 +77,10 @@ func (qm *QueueMiddleware) Send(msg m.Message) error {
 	defer cancel()
 
 	err := qm.publisherChannel.PublishWithContext(ctx,
-		"",            // exchange
-		qm.queue.Name, // routing key
-		false,         // mandatory
-		false,         // immediate
+		"",       // exchange
+		qm.queue, // routing key
+		false,    // mandatory
+		false,    // immediate
 		amqp.Publishing{
 			ContentType: "text/plain",
 			Body:        []byte(msg.Body),

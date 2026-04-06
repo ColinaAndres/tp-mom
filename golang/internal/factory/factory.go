@@ -41,7 +41,7 @@ func CreateQueueMiddleware(queueName string, connectionSettings m.ConnSettings) 
 		conn:             conn,
 		consumerChannel:  consumerChannel,
 		publisherChannel: publisherChannel,
-		queue:            q,
+		queue:            q.Name,
 		consumerTag:      q.Name,
 		done:             make(chan struct{}),
 	}, nil
