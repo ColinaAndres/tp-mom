@@ -58,7 +58,12 @@ func (qm *QueueMiddleware) StartConsuming(callbackFunc func(msg m.Message, ack f
 func (qm *QueueMiddleware) StopConsuming() error {
 	err := qm.consumerChannel.Cancel(qm.consumerTag, false)
 	if err != nil {
-		return m.ErrMessageMiddlewareDisconnected
+		if qm.consumerChannel.IsClosed() {
+			return m.ErrMessageMiddlewareDisconnected
+		}
+		// Si el canal no esta cerrado significa que nunca
+		// se inicio el consumo
+		return nil
 	}
 
 	qm.consumingWaiting.Wait()
