@@ -57,7 +57,7 @@ func (qm *QueueMiddleware) StartConsuming(callbackFunc func(msg m.Message, ack f
 		return m.ErrMessageMiddlewareDisconnected
 	}
 
-	return err
+	return nil
 }
 
 func (qm *QueueMiddleware) StopConsuming() error {
