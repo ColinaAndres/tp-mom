@@ -34,18 +34,23 @@ func (qm *QueueMiddleware) StartConsuming(callbackFunc func(msg m.Message, ack f
 	qm.consumingWaiting.Add(1)
 	defer qm.consumingWaiting.Done()
 
+	var ackError error
 	for msg := range msgs {
 		callbackFunc(m.Message{Body: string(msg.Body)},
 			func() {
 				if err := msg.Ack(false); err != nil {
-					err = m.ErrMessageMiddlewareMessage
+					ackError = m.ErrMessageMiddlewareMessage
 				}
 			},
 			func() {
 				if err := msg.Nack(false, true); err != nil {
-					err = m.ErrMessageMiddlewareMessage
+					ackError = m.ErrMessageMiddlewareMessage
 				}
 			})
+
+		if ackError != nil {
+			return ackError
+		}
 	}
 
 	if qm.consumerChannel.IsClosed() {
@@ -57,13 +62,10 @@ func (qm *QueueMiddleware) StartConsuming(callbackFunc func(msg m.Message, ack f
 
 func (qm *QueueMiddleware) StopConsuming() error {
 	err := qm.consumerChannel.Cancel(qm.consumerTag, false)
-	if err != nil {
-		if qm.consumerChannel.IsClosed() {
-			return m.ErrMessageMiddlewareDisconnected
-		}
+	if err != nil && qm.consumerChannel.IsClosed() {
 		// Si el canal no esta cerrado significa que nunca
-		// se inicio el consumo
-		return nil
+		// se inicio el consumo, caso contrario se devuelve el error
+		return m.ErrMessageMiddlewareDisconnected
 	}
 
 	qm.consumingWaiting.Wait()
