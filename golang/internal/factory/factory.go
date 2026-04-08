@@ -16,11 +16,13 @@ func CreateQueueMiddleware(queueName string, connectionSettings m.ConnSettings) 
 
 	consumerChannel, err := conn.Channel()
 	if err != nil {
+		conn.Close()
 		return nil, err
 	}
 
 	publisherChannel, err := conn.Channel()
 	if err != nil {
+		conn.Close()
 		return nil, err
 	}
 
@@ -34,6 +36,9 @@ func CreateQueueMiddleware(queueName string, connectionSettings m.ConnSettings) 
 	)
 
 	if err != nil {
+		publisherChannel.Close()
+		consumerChannel.Close()
+		conn.Close()
 		return nil, err
 	}
 
@@ -56,11 +61,13 @@ func CreateExchangeMiddleware(exchange string, keys []string, connectionSettings
 
 	consumerChannel, err := conn.Channel()
 	if err != nil {
+		conn.Close()
 		return nil, err
 	}
 
 	publisherChannel, err := conn.Channel()
 	if err != nil {
+		conn.Close()
 		return nil, err
 	}
 
@@ -75,6 +82,9 @@ func CreateExchangeMiddleware(exchange string, keys []string, connectionSettings
 		nil,      // arguments
 	)
 	if err != nil {
+		publisherChannel.Close()
+		consumerChannel.Close()
+		conn.Close()
 		return nil, err
 	}
 
