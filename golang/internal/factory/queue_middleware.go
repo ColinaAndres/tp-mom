@@ -2,6 +2,7 @@ package factory
 
 import (
 	"context"
+	"sync"
 
 	m "github.com/7574-sistemas-distribuidos/tp-mom/golang/internal/middleware"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -13,12 +14,10 @@ type QueueMiddleware struct {
 	publisherChannel *amqp.Channel
 	queue            string
 	consumerTag      string
-	done             chan struct{}
-	consuming        bool
+	consumingWaiting sync.WaitGroup
 }
 
 func (qm *QueueMiddleware) StartConsuming(callbackFunc func(msg m.Message, ack func(), nack func())) error {
-	qm.consuming = true
 	msgs, err := qm.consumerChannel.Consume(
 		qm.queue,       // queue
 		qm.consumerTag, // consumer
@@ -32,8 +31,8 @@ func (qm *QueueMiddleware) StartConsuming(callbackFunc func(msg m.Message, ack f
 		return m.ErrMessageMiddlewareMessage
 	}
 
-	// Canal que al cerrarse indica que se dejo de consumir y procesar mensajes
-	defer close(qm.done)
+	qm.consumingWaiting.Add(1)
+	defer qm.consumingWaiting.Done()
 
 	for msg := range msgs {
 		callbackFunc(m.Message{Body: string(msg.Body)},
@@ -49,23 +48,20 @@ func (qm *QueueMiddleware) StartConsuming(callbackFunc func(msg m.Message, ack f
 			})
 	}
 
-	qm.consuming = false
+	if qm.consumerChannel.IsClosed() {
+		return m.ErrMessageMiddlewareDisconnected
+	}
+
 	return err
 }
 
 func (qm *QueueMiddleware) StopConsuming() error {
-	if !qm.consuming {
-		return nil
-	}
-
 	err := qm.consumerChannel.Cancel(qm.consumerTag, false)
 	if err != nil {
 		return m.ErrMessageMiddlewareDisconnected
 	}
 
-	// Se espera a que se deje de consumir y procesar mensajes antes de retornar
-	<-qm.done
-	qm.consuming = false
+	qm.consumingWaiting.Wait()
 	return nil
 }
 
@@ -91,6 +87,8 @@ func (qm *QueueMiddleware) Send(msg m.Message) error {
 }
 
 func (qm *QueueMiddleware) Close() error {
+	// if an error occurs while stop consuming,
+	// ignore it and try to close the channels and connection anyway
 	qm.StopConsuming()
 	err := qm.publisherChannel.Close()
 	if err != nil {
