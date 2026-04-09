@@ -12,7 +12,6 @@ type ExchangeMiddleware struct {
 	conn             *amqp.Connection
 	publisherChannel *amqp.Channel
 	consumerChannel  *amqp.Channel
-	channel          *amqp.Channel
 	exchange         string
 	consumerTag      string
 	keys             []string
