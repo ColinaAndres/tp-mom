@@ -44,3 +44,12 @@ func (b *baseMiddleware) runConsumerLoop(msgs <-chan amqp.Delivery, callbackFunc
 	}
 	return nil
 }
+
+func (b *baseMiddleware) StopConsuming() error {
+	err := b.consumerChannel.Cancel(b.consumerTag, false)
+	if err != nil && b.consumerChannel.IsClosed() {
+		return m.ErrMessageMiddlewareDisconnected
+	}
+	b.consumingWaiting.Wait()
+	return nil
+}
