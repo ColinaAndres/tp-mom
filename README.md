@@ -59,4 +59,6 @@ Se desarrolló el ejercicio en Golang con todos los archivos en la ruta pedida p
 
 - Las flags de durabilidad están puestas en false por simplicidad; en una implementación futura pueden cambiar o, mejor aún, ser configurables.
 
-### Imagen de test pasando
+### Resultados de Tests
+
+![Resultado tests mom](assets/tests_mom_pasando.png)
