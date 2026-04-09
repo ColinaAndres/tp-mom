@@ -56,7 +56,7 @@ func (em *ExchangeMiddleware) StartConsuming(callbackFunc func(msg m.Message, ac
 }
 
 func (em *ExchangeMiddleware) StopConsuming() error {
-	return em.baseMiddleware.StopConsuming()
+	return em.baseMiddleware.stopConsuming()
 }
 
 func (em *ExchangeMiddleware) Send(msg m.Message) error {
@@ -75,5 +75,5 @@ func (em *ExchangeMiddleware) Send(msg m.Message) error {
 }
 
 func (em *ExchangeMiddleware) Close() error {
-	return em.baseMiddleware.Close()
+	return em.baseMiddleware.close()
 }

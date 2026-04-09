@@ -46,7 +46,7 @@ func (b *baseMiddleware) runConsumerLoop(msgs <-chan amqp.Delivery, callbackFunc
 	return nil
 }
 
-func (b *baseMiddleware) StopConsuming() error {
+func (b *baseMiddleware) stopConsuming() error {
 	err := b.consumerChannel.Cancel(b.consumerTag, false)
 	if err != nil && b.consumerChannel.IsClosed() {
 		return m.ErrMessageMiddlewareDisconnected
@@ -69,8 +69,8 @@ func (b *baseMiddleware) publish(ctx context.Context, exchange, routingKey strin
 	return mapMiddlewareError(err)
 }
 
-func (b *baseMiddleware) Close() error {
-	b.StopConsuming()
+func (b *baseMiddleware) close() error {
+	b.stopConsuming()
 	if err := b.publisherChannel.Close(); err != nil {
 		return m.ErrMessageMiddlewareClose
 	}

@@ -30,7 +30,7 @@ func (qm *QueueMiddleware) StartConsuming(callbackFunc func(msg m.Message, ack f
 }
 
 func (qm *QueueMiddleware) StopConsuming() error {
-	return qm.baseMiddleware.StopConsuming()
+	return qm.baseMiddleware.stopConsuming()
 }
 
 func (qm *QueueMiddleware) Send(msg m.Message) error {
@@ -42,5 +42,5 @@ func (qm *QueueMiddleware) Send(msg m.Message) error {
 }
 
 func (qm *QueueMiddleware) Close() error {
-	return qm.baseMiddleware.Close()
+	return qm.baseMiddleware.close()
 }
