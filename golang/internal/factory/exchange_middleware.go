@@ -45,7 +45,6 @@ func (em *ExchangeMiddleware) StartConsuming(callbackFunc func(msg m.Message, ac
 		}
 	}
 
-	em.consumerTag = queue.Name
 	msgs, err := em.consumerChannel.Consume(
 		queue.Name,     // queue
 		em.consumerTag, // consumer

@@ -48,7 +48,7 @@ func CreateQueueMiddleware(queueName string, connectionSettings m.ConnSettings) 
 		consumerChannel:  consumerChannel,
 		publisherChannel: publisherChannel,
 		queue:            q.Name,
-		consumerTag:      q.Name,
+		consumerTag:      SimpleCryptoID(32),
 	}, nil
 }
 
@@ -95,5 +95,6 @@ func CreateExchangeMiddleware(exchange string, keys []string, connectionSettings
 		consumerChannel:  consumerChannel,
 		exchange:         exchange,
 		keys:             keys,
+		consumerTag:      SimpleCryptoID(32),
 	}, nil
 }

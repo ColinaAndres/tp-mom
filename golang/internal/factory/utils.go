@@ -3,6 +3,9 @@ package factory
 import (
 	"time"
 
+	"crypto/rand"
+	"encoding/hex"
+
 	m "github.com/7574-sistemas-distribuidos/tp-mom/golang/internal/middleware"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -21,4 +24,10 @@ func mapMiddlewareError(err error) error {
 	default:
 		return m.ErrMessageMiddlewareMessage
 	}
+}
+
+func SimpleCryptoID(tamano int) string {
+	b := make([]byte, tamano)
+	rand.Read(b)
+	return hex.EncodeToString(b)
 }
