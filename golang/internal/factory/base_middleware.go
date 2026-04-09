@@ -66,7 +66,11 @@ func (b *baseMiddleware) publish(ctx context.Context, exchange, routingKey strin
 			Body:        []byte(msg.Body),
 		},
 	)
-	return mapMiddlewareError(err)
+	if b.publisherChannel.IsClosed() {
+		return m.ErrMessageMiddlewareDisconnected
+	}
+
+	return err
 }
 
 func (b *baseMiddleware) close() error {
