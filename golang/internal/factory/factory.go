@@ -44,11 +44,13 @@ func CreateQueueMiddleware(queueName string, connectionSettings m.ConnSettings) 
 	}
 
 	return &QueueMiddleware{
-		conn:             conn,
-		consumerChannel:  consumerChannel,
-		publisherChannel: publisherChannel,
-		queue:            q.Name,
-		consumerTag:      SimpleCryptoID(32),
+		baseMiddleware: baseMiddleware{
+			conn:             conn,
+			consumerChannel:  consumerChannel,
+			publisherChannel: publisherChannel,
+			consumerTag:      SimpleCryptoID(32),
+		},
+		queue: q.Name,
 	}, nil
 }
 
