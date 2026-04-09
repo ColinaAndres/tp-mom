@@ -39,3 +39,24 @@ Instalar los dependencias de la suite de pruebas:
 Instalar una versión de Golang superior a `1.24`.
 Instalar los dependencias de la suite de pruebas:
 `go mod download`
+
+## Entrega
+
+Se desarrolló el ejercicio en Golang con todos los archivos en la ruta pedida por la consigna:
+`/golang/internal/factory/*.go`.
+
+### Aclaraciones
+
+- Para evitar race conditions sobre los channels de RabbitMQ, se optó por generar un canal para publicar y otro diferente para consumir, de esta manera se puede tener externamente una rutina dedicada a cada trabajo.
+
+- `StartConsuming()` es sincrónico y bloqueante, no se puede hacer asincrónico usando una rutina para el loop de consumo ya que se perderían los posibles mensajes de errores, esta limitación se debe a la firma de la interfaz, específicamente la del parámetro `callbackFunc`; en una futura implementación se puede manejar mejor si la `callbackFunc` permite recibir un canal donde se envíen los errores de la rutina.
+
+- Para generar un consumerTag único se creó una función `SimpleCryptoID()` que para este trabajo cumple; en una implementación más robusta y con permiso de la cátedra, se debería usar la librería de `uuid`.
+
+- Se extrajo gran parte de la lógica repetida a un `baseMiddleware`.
+
+- Al llamar a `StopConsuming()` se "cancela" el canal de consumo, esto le indica a Rabbit que no envíe más mensajes a ese canal, posteriormente se espera a que se terminen de procesar los mensajes remanentes; esta implementación es válida únicamente si el procesamiento de mensajes es corto; de no serlo, se puede optar por cerrar directamente el canal y que Rabbit maneje los errores (ya que no podrá recibir ack o nack de estos mensajes perdidos). Esto también ocurre al usar `Close()`, ya que este llama a `StopConsuming()` internamente.
+
+- Las flags de durabilidad están puestas en false por simplicidad; en una implementación futura pueden cambiar o, mejor aún, ser configurables.
+
+### Imagen de test pasando
