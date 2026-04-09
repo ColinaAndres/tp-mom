@@ -94,8 +94,8 @@ func (qm *QueueMiddleware) Send(msg m.Message) error {
 }
 
 func (qm *QueueMiddleware) Close() error {
-	// if an error occurs while stop consuming,
-	// ignore it and try to close the channels and connection anyway
+	// si ocurre un error al parar el consumo,
+	// se opta por seguir intentando cerrar los canales y la conexión
 	qm.StopConsuming()
 	err := qm.publisherChannel.Close()
 	if err != nil {
