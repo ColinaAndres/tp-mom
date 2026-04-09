@@ -92,11 +92,13 @@ func CreateExchangeMiddleware(exchange string, keys []string, connectionSettings
 	}
 
 	return &ExchangeMiddleware{
-		conn:             conn,
-		publisherChannel: publisherChannel,
-		consumerChannel:  consumerChannel,
-		exchange:         exchange,
-		keys:             keys,
-		consumerTag:      SimpleCryptoID(32),
+		baseMiddleware: baseMiddleware{
+			conn:             conn,
+			consumerChannel:  consumerChannel,
+			publisherChannel: publisherChannel,
+			consumerTag:      SimpleCryptoID(32),
+		},
+		exchange: exchange,
+		keys:     keys,
 	}, nil
 }

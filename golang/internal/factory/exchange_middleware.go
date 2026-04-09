@@ -2,20 +2,15 @@ package factory
 
 import (
 	"context"
-	"sync"
 
 	m "github.com/7574-sistemas-distribuidos/tp-mom/golang/internal/middleware"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type ExchangeMiddleware struct {
-	conn             *amqp.Connection
-	publisherChannel *amqp.Channel
-	consumerChannel  *amqp.Channel
-	exchange         string
-	consumerTag      string
-	keys             []string
-	consumingWaiting sync.WaitGroup
+	baseMiddleware
+	exchange string
+	keys     []string
 }
 
 func (em *ExchangeMiddleware) StartConsuming(callbackFunc func(msg m.Message, ack func(), nack func())) error {
@@ -58,44 +53,7 @@ func (em *ExchangeMiddleware) StartConsuming(callbackFunc func(msg m.Message, ac
 		return m.ErrMessageMiddlewareMessage
 	}
 
-	em.consumingWaiting.Add(1)
-	defer em.consumingWaiting.Done()
-
-	var ackError error
-	for msg := range msgs {
-		callbackFunc(m.Message{Body: string(msg.Body)},
-			func() {
-				if err := msg.Ack(false); err != nil {
-					ackError = m.ErrMessageMiddlewareMessage
-				}
-			},
-			func() {
-				if err := msg.Nack(false, true); err != nil {
-					ackError = m.ErrMessageMiddlewareMessage
-				}
-			})
-		if ackError != nil {
-			return ackError
-		}
-	}
-
-	if em.consumerChannel.IsClosed() {
-		return m.ErrMessageMiddlewareDisconnected
-	}
-
-	return nil
-}
-
-func (em *ExchangeMiddleware) StopConsuming() error {
-	err := em.consumerChannel.Cancel(em.consumerTag, false)
-	if err != nil && em.consumerChannel.IsClosed() {
-		// Si el canal no esta cerrado significa que nunca
-		// se inicio el consumo, caso contrario se devuelve el error
-		return m.ErrMessageMiddlewareDisconnected
-	}
-
-	em.consumingWaiting.Wait()
-	return nil
+	return em.runConsumerLoop(msgs, callbackFunc)
 }
 
 func (em *ExchangeMiddleware) Send(msg m.Message) error {
@@ -121,26 +79,5 @@ func (em *ExchangeMiddleware) Send(msg m.Message) error {
 		}
 	}
 
-	return nil
-}
-
-func (em *ExchangeMiddleware) Close() error {
-	// si ocurre un error al parar el consumo,
-	// se opta por seguir intentando cerrar los canales y la conexión
-	em.StopConsuming()
-	err := em.publisherChannel.Close()
-	if err != nil {
-		return m.ErrMessageMiddlewareClose
-	}
-
-	err = em.consumerChannel.Close()
-	if err != nil {
-		return m.ErrMessageMiddlewareClose
-	}
-
-	err = em.conn.Close()
-	if err != nil {
-		return m.ErrMessageMiddlewareClose
-	}
 	return nil
 }
