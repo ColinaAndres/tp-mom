@@ -55,6 +55,10 @@ func (em *ExchangeMiddleware) StartConsuming(callbackFunc func(msg m.Message, ac
 	return em.runConsumerLoop(msgs, callbackFunc)
 }
 
+func (em *ExchangeMiddleware) StopConsuming() error {
+	return em.baseMiddleware.StopConsuming()
+}
+
 func (em *ExchangeMiddleware) Send(msg m.Message) error {
 	// se opta por usar un ctx para mantenernos en un tipo limite
 	// y seguir la propuesta de RabbitMQ
@@ -68,4 +72,8 @@ func (em *ExchangeMiddleware) Send(msg m.Message) error {
 		}
 	}
 	return nil
+}
+
+func (em *ExchangeMiddleware) Close() error {
+	return em.baseMiddleware.Close()
 }

@@ -29,10 +29,18 @@ func (qm *QueueMiddleware) StartConsuming(callbackFunc func(msg m.Message, ack f
 	return qm.runConsumerLoop(msgs, callbackFunc)
 }
 
+func (qm *QueueMiddleware) StopConsuming() error {
+	return qm.baseMiddleware.StopConsuming()
+}
+
 func (qm *QueueMiddleware) Send(msg m.Message) error {
 	// se opta por usar un ctx para mantenernos en un tipo limite
 	// y seguir la propuesta de RabbitMQ
 	ctx, cancel := context.WithTimeout(context.Background(), publishTimeout)
 	defer cancel()
 	return qm.publish(ctx, defaultExchange, qm.queue, msg)
+}
+
+func (qm *QueueMiddleware) Close() error {
+	return qm.baseMiddleware.Close()
 }
