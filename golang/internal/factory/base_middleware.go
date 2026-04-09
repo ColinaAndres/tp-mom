@@ -1,6 +1,7 @@
 package factory
 
 import (
+	"context"
 	"sync"
 
 	m "github.com/7574-sistemas-distribuidos/tp-mom/golang/internal/middleware"
@@ -52,6 +53,20 @@ func (b *baseMiddleware) StopConsuming() error {
 	}
 	b.consumingWaiting.Wait()
 	return nil
+}
+
+func (b *baseMiddleware) publish(ctx context.Context, exchange, routingKey string, msg m.Message) error {
+	err := b.publisherChannel.PublishWithContext(ctx,
+		exchange,   // exchange
+		routingKey, // routing key
+		false,      // mandatory
+		false,      // immediate
+		amqp.Publishing{
+			ContentType: contentType,
+			Body:        []byte(msg.Body),
+		},
+	)
+	return mapMiddlewareError(err)
 }
 
 func (b *baseMiddleware) Close() error {

@@ -11,8 +11,9 @@ import (
 )
 
 const (
-	publishTimeout = 5 * time.Second
-	contentType    = "text/plain"
+	publishTimeout  = 5 * time.Second
+	contentType     = "text/plain"
+	defaultExchange = ""
 )
 
 func mapMiddlewareError(err error) error {

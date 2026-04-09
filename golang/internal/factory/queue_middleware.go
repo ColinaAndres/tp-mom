@@ -4,7 +4,6 @@ import (
 	"context"
 
 	m "github.com/7574-sistemas-distribuidos/tp-mom/golang/internal/middleware"
-	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type QueueMiddleware struct {
@@ -35,18 +34,5 @@ func (qm *QueueMiddleware) Send(msg m.Message) error {
 	// y seguir la propuesta de RabbitMQ
 	ctx, cancel := context.WithTimeout(context.Background(), publishTimeout)
 	defer cancel()
-
-	err := qm.publisherChannel.PublishWithContext(ctx,
-		"",       // exchange
-		qm.queue, // routing key
-		false,    // mandatory
-		false,    // immediate
-		amqp.Publishing{
-			ContentType: contentType,
-			Body:        []byte(msg.Body),
-		})
-	if err = mapMiddlewareError(err); err != nil {
-		return err
-	}
-	return nil
+	return qm.publish(ctx, defaultExchange, qm.queue, msg)
 }
