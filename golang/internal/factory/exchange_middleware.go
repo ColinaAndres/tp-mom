@@ -118,6 +118,8 @@ func (em *ExchangeMiddleware) Send(msg m.Message) error {
 }
 
 func (em *ExchangeMiddleware) Close() error {
+	// si ocurre un error al parar el consumo,
+	// se opta por seguir intentando cerrar los canales y la conexión
 	em.StopConsuming()
 	err := em.publisherChannel.Close()
 	if err != nil {
