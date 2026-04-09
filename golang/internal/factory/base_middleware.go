@@ -53,3 +53,17 @@ func (b *baseMiddleware) StopConsuming() error {
 	b.consumingWaiting.Wait()
 	return nil
 }
+
+func (b *baseMiddleware) Close() error {
+	b.StopConsuming()
+	if err := b.publisherChannel.Close(); err != nil {
+		return m.ErrMessageMiddlewareClose
+	}
+	if err := b.consumerChannel.Close(); err != nil {
+		return m.ErrMessageMiddlewareClose
+	}
+	if err := b.conn.Close(); err != nil {
+		return m.ErrMessageMiddlewareClose
+	}
+	return nil
+}
