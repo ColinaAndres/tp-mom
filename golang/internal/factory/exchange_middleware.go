@@ -63,20 +63,29 @@ func (em *ExchangeMiddleware) StartConsuming(callbackFunc func(msg m.Message, ac
 	em.consumingWaiting.Add(1)
 	defer em.consumingWaiting.Done()
 
+	var ackError error
 	for msg := range msgs {
 		callbackFunc(m.Message{Body: string(msg.Body)},
 			func() {
 				if err := msg.Ack(false); err != nil {
-					err = m.ErrMessageMiddlewareMessage
+					ackError = m.ErrMessageMiddlewareMessage
 				}
 			},
 			func() {
 				if err := msg.Nack(false, true); err != nil {
-					err = m.ErrMessageMiddlewareMessage
+					ackError = m.ErrMessageMiddlewareMessage
 				}
 			})
+		if ackError != nil {
+			return ackError
+		}
 	}
-	return err
+
+	if em.consumerChannel.IsClosed() {
+		return m.ErrMessageMiddlewareDisconnected
+	}
+
+	return nil
 }
 
 func (em *ExchangeMiddleware) StopConsuming() error {
