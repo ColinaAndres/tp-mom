@@ -2,6 +2,7 @@ package factory
 
 import (
 	"context"
+	"sync"
 
 	m "github.com/7574-sistemas-distribuidos/tp-mom/golang/internal/middleware"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -15,6 +16,7 @@ type ExchangeMiddleware struct {
 	exchange         string
 	consumerTag      string
 	keys             []string
+	consumingWaiting sync.WaitGroup
 }
 
 func (em *ExchangeMiddleware) StartConsuming(callbackFunc func(msg m.Message, ack func(), nack func())) error {
@@ -58,6 +60,9 @@ func (em *ExchangeMiddleware) StartConsuming(callbackFunc func(msg m.Message, ac
 		return m.ErrMessageMiddlewareMessage
 	}
 
+	em.consumingWaiting.Add(1)
+	defer em.consumingWaiting.Done()
+
 	for msg := range msgs {
 		callbackFunc(m.Message{Body: string(msg.Body)},
 			func() {
@@ -75,13 +80,14 @@ func (em *ExchangeMiddleware) StartConsuming(callbackFunc func(msg m.Message, ac
 }
 
 func (em *ExchangeMiddleware) StopConsuming() error {
-	if em.consumerTag == "" {
-		return nil
-	}
 	err := em.consumerChannel.Cancel(em.consumerTag, false)
-	if err != nil {
-		return err
+	if err != nil && em.consumerChannel.IsClosed() {
+		// Si el canal no esta cerrado significa que nunca
+		// se inicio el consumo, caso contrario se devuelve el error
+		return m.ErrMessageMiddlewareDisconnected
 	}
+
+	em.consumingWaiting.Wait()
 	return nil
 }
 
